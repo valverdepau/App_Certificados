@@ -1,0 +1,15 @@
+# Variables de entorno y secretos
+.env
+
+# Entornos virtuales
+.venv/
+
+# Archivos de caché y compilación de Python
+__pycache__/
+*.pyc
+
+# Configuración y despliegues de Vercel
+.vercel/
+
+# Archivos del sistema macOS
+.DS_Store
