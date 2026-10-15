@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Academia Horizonte — Certificados</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="encabezado">
+    <div class="logo">AH</div>
+    <div>
+      <h1>Academia Horizonte</h1>
+      <p class="sub">Centro de formación · Certificados por cohorte</p>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <!-- Contadores -->
+    <section class="contadores">
+      <div class="tarjeta verde">
+        <span class="numero">{{ aprob }}</span>
+        <span class="etiqueta">Aprobación</span>
+      </div>
+      <div class="tarjeta azul">
+        <span class="numero">{{ part }}</span>
+        <span class="etiqueta">Participación</span>
+      </div>
+      <div class="tarjeta rojo">
+        <span class="numero">{{ sin_cert }}</span>
+        <span class="etiqueta">Sin certificado</span>
+      </div>
+      <div class="tarjeta gris">
+        <span class="numero">{{ total }}</span>
+        <span class="etiqueta">Estudiantes</span>
+      </div>
+    </section>
+
+    <section class="bloque">
+      <h2>Resultados</h2>
+      <div class="filtros">
+        <label for="filtroPrograma">Programa:</label>
+        <select id="filtroPrograma">
+          <option value="todos">Todos</option>
+          {% for p in programas %}
+            <option value="{{ p }}">{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="tabla-responsiva">
+        <table id="tablaResultados">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Programa</th>
+              <th>Módulos</th>
+              <th>Promedio</th>
+              <th>Asistencia</th>
+              <th>Certificado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in resultados %}
+            <tr data-programa="{{ r.programa }}" class="fila-{{ r.certificado|lower|replace(' ', '-') }}">
+              <td>{{ r.nombre }}</td>
+              <td>{{ r.programa }}</td>
+              <td class="centro">{{ r.modulos }}</td>
+              <td class="centro">{{ r.promedio_nota }}</td>
+              <td class="centro">{{ r.promedio_asistencia }}%</td>
+              <td>
+                <span class="badge {{ r.certificado }}">
+                  {{ r.certificado }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Inconsistencias -->
+    <section class="bloque inconsistencias">
+      <h2>Inconsistencias detectadas</h2>
+      {% if inconsistencias %}
+        <ul>
+          {% for inc in inconsistencias %}
+            <li>
+              <strong>{{ inc.identificacion }}</strong> — {{ inc.tipo }}:
+              {{ inc.detalle }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No se detectaron inconsistencias.</p>
+      {% endif %}
+    </section>
+
+    <footer class="pie">
+      <a href="{{ url_for('cargar') }}">Cargar archivos Excel</a>
+    </footer>
+  </main>
+
+  <script>
+    // Filtro por programa (solo muestra/oculta filas, no recalcula).
+    const sel = document.getElementById('filtroPrograma');
+    const filas = document.querySelectorAll('#tablaResultados tbody tr');
+    sel.addEventListener('change', function() {
+      const val = this.value;
+      filas.forEach(function(f) {
+        const prog = f.getAttribute('data-programa');
+        f.style.display = (val === 'todos' || prog === val) ? '' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>
+EOF
+
+cat > views/cargar.html <<'EOF'
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Cargar datos — Academia Horizonte</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="encabezado">
+    <div class="logo">AH</div>
+    <div>
+      <h1>Academia Horizonte</h1>
+      <p class="sub">Carga de archivos Excel</p>
+    </div>
+  </header>
+  <main class="contenedor">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mensajes">
+          {% for cat, msg in messages %}
+            <div class="mensaje {{ cat }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form class="formulario" method="post" enctype="multipart/form-data">
+      <label>Maestro_Estudiantes.xlsx
+        <input type="file" name="maestro" accept=".xlsx" required>
+      </label>
+      <label>Registro_Evaluaciones.xlsx
+        <input type="file" name="evaluaciones" accept=".xlsx" required>
+      </label>
+      <button type="submit">Cargar</button>
+    </form>
+    <p><a href="{{ url_for('index') }}">Volver al tablero</a></p>
+  </main>
+</body>
+</html>
+EOF

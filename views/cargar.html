@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cargar datos — Academia Horizonte</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="encabezado">
+    <div class="logo">AH</div>
+    <div>
+      <h1>Academia Horizonte</h1>
+      <p class="sub">Carga de archivos Excel</p>
+    </div>
+  </header>
+  <main class="contenedor">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mensajes">
+          {% for cat, msg in messages %}
+            <div class="mensaje {{ cat }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="bloque">
+      <h2>Cargar archivos</h2>
+      <form class="formulario" method="post" enctype="multipart/form-data">
+        <label>Maestro_Estudiantes.xlsx
+          <input type="file" name="maestro" accept=".xlsx" required>
+        </label>
+        <label>Registro_Evaluaciones.xlsx
+          <input type="file" name="evaluaciones" accept=".xlsx" required>
+        </label>
+        <button type="submit">Cargar</button>
+      </form>
+      <p><a href="{{ url_for('index') }}">Volver al tablero</a></p>
+    </section>
+  </main>
+</body>
+</html>
+EOF

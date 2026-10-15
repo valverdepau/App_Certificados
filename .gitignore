@@ -8,6 +8,11 @@
 __pycache__/
 *.pyc
 
+# Archivos temporales
+*.tmp
+*.log
+*.xlsx~
+
 # Configuración y despliegues de Vercel
 .vercel/
 

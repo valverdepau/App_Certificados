@@ -1,0 +1,14 @@
+[project]
+name = "app-certificados"
+version = "0.1.0"
+description = "App web de certificados de la Academia Horizonte"
+requires-python = ">=3.12"
+dependencies = [
+    "flask>=3.0",
+    "pandas>=2.0",
+    "openpyxl>=3.0",
+    "fpdf2>=2.0",
+]
+
+[tool.uv]
+package = false
