@@ -8,6 +8,8 @@ dependencies = [
     "pandas>=2.0",
     "openpyxl>=3.0",
     "fpdf2>=2.0",
+    "supabase>=2.32.0",
+    "python-dotenv>=1.2.4",
 ]
 
 [tool.uv]
