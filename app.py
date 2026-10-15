@@ -34,6 +34,7 @@ df_maestro = None
 df_evals = None
 resultados = []
 inconsistencias = []
+error_carga = None
 
 
 # ----------------------------------------------------------------------
@@ -244,8 +245,14 @@ def recalcular(maestro, evals):
 
 def cargar_iniciales():
     """Carga los datos iniciales desde Supabase."""
-    maestro, evals = leer_datos()
-    recalcular(maestro, evals)
+    global error_carga
+    try:
+        maestro, evals = leer_datos()
+        recalcular(maestro, evals)
+        error_carga = None
+    except Exception as exc:  # noqa: BLE001
+        error_carga = str(exc)
+        print("No se pudieron cargar datos iniciales:", exc)
 
 
 # ----------------------------------------------------------------------
@@ -268,6 +275,7 @@ def index():
         sin_cert=sin_cert,
         total=len(resultados),
         programas=programas,
+        error_carga=error_carga,
     )
 
 
@@ -291,10 +299,7 @@ def cargar():
 
 
 # Cargar datos al importar el modulo (util en Vercel/produccion).
-try:
-    cargar_iniciales()
-except Exception as exc:  # noqa: BLE001
-    print("No se pudieron cargar datos iniciales:", exc)
+cargar_iniciales()
 
 if __name__ == "__main__":
     # app variable + puerto 5000 (AGENTS.md)

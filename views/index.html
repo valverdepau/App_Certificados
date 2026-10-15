@@ -16,6 +16,12 @@
   </header>
 
   <main class="contenedor">
+    {% if error_carga %}
+      <div class="mensaje error" style="margin-bottom:1.5rem;">
+        <strong>No se pudieron cargar los datos de Supabase.</strong><br>
+        {{ error_carga }}
+      </div>
+    {% endif %}
     <!-- Contadores -->
     <section class="contadores">
       <div class="tarjeta verde">
