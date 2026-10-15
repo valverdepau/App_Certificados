@@ -5,9 +5,12 @@
 # ----------------------------------------------------------------------
 
 import io
+import os
 from pathlib import Path
 
 import pandas as pd
+from dotenv import load_dotenv
+from supabase import create_client
 from flask import Flask, render_template, request, redirect, url_for, flash
 
 # carpeta de plantillas: "views/" (segun AGENTS.md)
@@ -18,6 +21,12 @@ app.secret_key = "academia-horizonte"  # solo para mensajes flash en local
 BASE_DIR = Path(__file__).resolve().parent
 RUTA_MAESTRO = BASE_DIR / "insumos" / "Maestro_Estudiantes.xlsx"
 RUTA_EVALS = BASE_DIR / "insumos" / "Registro_Evaluaciones.xlsx"
+
+# Tablas y columnas esperadas en Supabase (iguales a las de los Excel).
+TABLA_MAESTRO = "estudiantes"
+TABLA_EVALS = "evaluaciones"
+COLUMNAS_MAESTRO = ["Identificacion", "Nombre_Completo", "Correo", "Programa", "Cohorte"]
+COLUMNAS_EVALS = ["Identificacion", "Programa", "Modulo", "Nota", "Asistencia_Pct", "Fecha_Cierre"]
 
 # Estado en memoria de la aplicacion.
 # En esta version se inicializa desde los Excel originales de insumos/.
@@ -63,6 +72,42 @@ def leer_evals_desde_bytes(contenido):
     df["Nota"] = pd.to_numeric(df["Nota"], errors="coerce")
     df["Asistencia_Pct"] = pd.to_numeric(df["Asistencia_Pct"], errors="coerce")
     return df
+
+
+def leer_datos():
+    """Lee las tablas completas desde Supabase y las convierte en DataFrames."""
+    # Cargar variables de entorno (local: .env; produccion: variables del host)
+    load_dotenv()
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_KEY")
+    # condicional: validar configuracion antes de conectar
+    if not url or not key:
+        raise RuntimeError("Faltan SUPABASE_URL o SUPABASE_KEY en el entorno.")
+
+    # cliente de Supabase
+    supabase = create_client(url, key)
+
+    # leer completas las tablas
+    filas_maestro = supabase.table(TABLA_MAESTRO).select("*").execute().data
+    filas_evals = supabase.table(TABLA_EVALS).select("*").execute().data
+
+    # convertir a DataFrame con las mismas columnas que tenian los Excel
+    df_maestro = pd.DataFrame(filas_maestro, columns=COLUMNAS_MAESTRO)
+    df_evals = pd.DataFrame(filas_evals, columns=COLUMNAS_EVALS)
+
+    # normalizacion de texto (regla: Identificacion siempre string limpio)
+    df_maestro["Identificacion"] = df_maestro["Identificacion"].astype(str).str.strip()
+    df_maestro["Programa"] = df_maestro["Programa"].astype(str).str.strip()
+    df_maestro["Nombre_Completo"] = df_maestro["Nombre_Completo"].astype(str).str.strip()
+
+    df_evals["Identificacion"] = df_evals["Identificacion"].astype(str).str.strip()
+    df_evals["Programa"] = df_evals["Programa"].astype(str).str.strip()
+    df_evals["Modulo"] = df_evals["Modulo"].astype(str).str.strip()
+    # conversion numerica (0 es valor real, no nulo)
+    df_evals["Nota"] = pd.to_numeric(df_evals["Nota"], errors="coerce")
+    df_evals["Asistencia_Pct"] = pd.to_numeric(df_evals["Asistencia_Pct"], errors="coerce")
+
+    return df_maestro, df_evals
 
 
 def calcular_promedio(valores):
@@ -198,12 +243,9 @@ def recalcular(maestro, evals):
 
 
 def cargar_iniciales():
-    """Carga los Excel originales desde insumos/."""
-    with open(RUTA_MAESTRO, "rb") as f:
-        m = leer_maestro_desde_bytes(f.read())
-    with open(RUTA_EVALS, "rb") as f:
-        e = leer_evals_desde_bytes(f.read())
-    recalcular(m, e)
+    """Carga los datos iniciales desde Supabase."""
+    maestro, evals = leer_datos()
+    recalcular(maestro, evals)
 
 
 # ----------------------------------------------------------------------
@@ -248,7 +290,12 @@ def cargar():
     return render_template("cargar.html")
 
 
-if __name__ == "__main__":
+# Cargar datos al importar el modulo (util en Vercel/produccion).
+try:
     cargar_iniciales()
+except Exception as exc:  # noqa: BLE001
+    print("No se pudieron cargar datos iniciales:", exc)
+
+if __name__ == "__main__":
     # app variable + puerto 5000 (AGENTS.md)
     app.run(host="0.0.0.0", port=5000, debug=True)
